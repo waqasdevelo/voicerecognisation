@@ -33,7 +33,12 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>We need access to your location for providing services.</string>
+	<key>NSCameraUsageDescription</key>
+<string>We need access to your camera for video calling.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>We need access to your microphone for video calling.</string>
+
 	 <key>NSMicrophoneUsageDescription</key>
       <string>Description of why you require the use of the microphone</string>
       <key>NSSpeechRecognitionUsageDescription</key>

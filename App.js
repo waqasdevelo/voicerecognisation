@@ -1,46 +1,87 @@
-import {Button, SafeAreaView, StyleSheet, Text, View} from 'react-native';
-import React, {useState} from 'react';
-import AgoraUIKit from 'agora-rn-uikit';
-
-const APP_ID = '3cc6edec8ae842a49014e3562adc141c'; // Replace with your Agora App ID
-const CHANNEL_NAME = 'AgoraTestCall'; // Change this to your preferred channel
-const TEMP_TOKEN =
-  '007eJxTYIhVXehzc9IqmagZf8v+CMREy7G4/bv2MNdDXjVa4cWfsAoFBuPkZLPUlNRki8RUCxOjRBNLA0OTVGNTM6PElGRDE8Pko/Hf0hoCGRl+pO1mYmSAQBCfl8ExPb8oMSS1uMQ5MSeHgQEAi2gjtw=='; // Replace with your Agora temp token if required
-
-const connectionData = {
-  appId: APP_ID,
-  channel: CHANNEL_NAME,
-  token: TEMP_TOKEN, // You can skip this if not using a token
-};
+import React, {useRef} from 'react';
+import {View, Button, StyleSheet, Alert, PixelRatio} from 'react-native';
+import {captureRef} from 'react-native-view-shot';
+import RNFS from 'react-native-fs';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 
 const App = () => {
-  const [videoCall, setVideoCall] = useState(false);
+  const viewRef = useRef(null);
 
-  const rtcCallbacks = {
-    EndCall: () => setVideoCall(false),
+  const takeScreenshot = async () => {
+    if (!viewRef.current) {
+      console.error('View reference is null!');
+      return;
+    }
+
+    try {
+      const uri = await captureRef(viewRef, {
+        format: 'jpg',
+        quality: 1,
+        width: 1080,
+        height: 1080,
+        scale: 1,
+      });
+
+      // Resize the captured image to 1080 x 1080
+      const resizedImage = await ImageResizer.createResizedImage(
+        uri,
+        1080,
+        1080,
+        'JPEG',
+        100, // Quality (0-100)
+      );
+
+      console.log('Resized image URI:', resizedImage.uri);
+
+      // Define the download path
+      const fileName = `screenshot_${Date.now()}.jpg`;
+      const downloadPath =
+        Platform.OS === 'android'
+          ? `${RNFS.DownloadDirectoryPath}/${fileName}` // Android Downloads folder
+          : `${RNFS.CachesDirectoryPath}/${fileName}`; // iOS Documents folder
+
+      try {
+        // Save the file to Downloads/Documents folder
+        await RNFS.copyFile(resizedImage.uri, downloadPath);
+        Alert.alert('Success', `Screenshot saved to ${downloadPath}`);
+        console.log('Screenshot saved to:', downloadPath);
+      } catch (error) {
+        console.error('Error saving file:', error);
+        Alert.alert('Error', 'Failed to save the screenshot.');
+      }
+    } catch (error) {
+      console.error('Failed to take screenshot:', error);
+    }
   };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <>
-        {videoCall ? (
-          <AgoraUIKit
-            connectionData={connectionData}
-            rtcCallbacks={rtcCallbacks}
-          />
-        ) : (
-          <Button title="Start Call" onPress={() => setVideoCall(true)} />
-        )}
-        <Button title="End Call" onPress={() => rtcCallbacks?.EndCall()} />
-      </>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <View ref={viewRef} style={styles.captureArea}>
+        <View style={styles.box} />
+      </View>
+      <Button title="Take Screenshot" onPress={takeScreenshot} />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    height: 500,
-    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  captureArea: {
+    width: 300,
+    height: 300,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  box: {
+    width: 100,
+    height: 100,
+    backgroundColor: 'blue',
   },
 });
 
